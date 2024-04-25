@@ -2,14 +2,16 @@ import json
 from typing import Literal
 
 from dotenv import load_dotenv
+from langchain import hub
+from langchain.agents import create_openai_tools_agent
+from langchain.load.dump import dumps
 from langchain_community.tools.ddg_search.tool import DuckDuckGoSearchRun
 from langchain_core.messages import FunctionMessage, HumanMessage
 from langchain_core.messages.base import BaseMessage
-from langchain_core.utils.function_calling import convert_to_openai_function
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, MessageGraph
-from langgraph.prebuilt import ToolExecutor, ToolInvocation
+from langgraph.prebuilt import ToolInvocation
 
 #
 
@@ -19,30 +21,40 @@ load_dotenv()
 
 tools = [DuckDuckGoSearchRun()]
 
-tool_executor = ToolExecutor(tools)
+# tool_executor = ToolExecutor(tools)
 
 # We will set streaming=True so that we can stream tokens
 # See the streaming section for more information on this.
-model = ChatOpenAI(temperature=0, streaming=True)
+llm = ChatOpenAI(temperature=0, streaming=True)
 
-functions = [convert_to_openai_function(t) for t in tools]
-model = model.bind_functions(functions)
+prompt = hub.pull("hwchase17/openai-functions-agent")
+
+query_agent_runnable = create_openai_tools_agent(llm=llm, tools=tools, prompt=prompt)
+# functions = [convert_to_openai_function(t) for t in tools]
+# llm = llm.bind_functions(functions)
+# model = model.bind_tools(tools)
+
+inputs = {"input": "what are EHI embeddings?", "intermediate_steps": []}
+agent_out = query_agent_runnable.invoke(inputs)
+print(dumps(agent_out, pretty=True))
 
 
 # Define the function that determines whether to continue or not
 def should_continue(messages) -> Literal["end"] | Literal["continue"]:
     last_message = messages[-1]
+    print(f"should_continue: {dumps(last_message, pretty=True)}")
     # If there is no function call, then we finish
-    if "function_call" not in last_message.additional_kwargs:
+    if "tool_calls" not in last_message.additional_kwargs:
         return "end"
     # Otherwise if there is, we continue
-    else:
-        return "continue"
+    return "continue"
 
 
 # Define the function that calls the model
 def call_model(messages) -> BaseMessage:
-    response = model.invoke(messages)
+    print(f"call_model: {dumps(messages, pretty=True)}")
+    response = llm.invoke(messages)
+    print(f"call_model response: {dumps(response, pretty=True)}")
     # We return a list, because this will get added to the existing list
     return response
 
@@ -52,15 +64,17 @@ def call_tool(messages) -> FunctionMessage:
     # Based on the continue condition
     # we know the last message involves a function call
     last_message = messages[-1]
+    print(f"call_tool: {dumps(last_message, pretty=True)}")
     # We construct an ToolInvocation from the function_call
+    tool_calls = last_message.additional_kwargs["tool_calls"]
+
     action = ToolInvocation(
-        tool=last_message.additional_kwargs["function_call"]["name"],
-        tool_input=json.loads(
-            last_message.additional_kwargs["function_call"]["arguments"]
-        ),
+        tool=tool_calls[0]["function"]["name"],
+        tool_input=json.loads(tool_calls[0]["function"]["arguments"]),
     )
     # We call the tool_executor and get back a response
     response = tool_executor.invoke(action)
+    print(f"Response: {dumps(response, pretty=True)}")
     # We use the response to create a FunctionMessage
     function_message = FunctionMessage(content=str(response), name=action.tool)
     # We return a list, because this will get added to the existing list
@@ -106,15 +120,15 @@ workflow.add_edge("action", "agent")
 
 thread = {"configurable": {"thread_id": "2"}}
 
-memory = SqliteSaver.from_conn_string(":memory:")
-
-# Finally, we compile it!
-# This compiles it into a LangChain Runnable,
-# meaning you can use it as you would any other runnable
-app = workflow.compile(checkpointer=memory, interrupt_before=["action"])
-
 
 def send_message(message: str) -> str:
+    memory = SqliteSaver.from_conn_string(":memory:")
+
+    # Finally, we compile it!
+    # This compiles it into a LangChain Runnable,
+    # meaning you can use it as you would any other runnable
+    app = workflow.compile(checkpointer=memory, interrupt_before=["action"])
+
     inputs = [HumanMessage(content=message)]
     while True:
         for event in app.stream(inputs, thread):
@@ -126,13 +140,13 @@ def send_message(message: str) -> str:
         inputs = None
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
-#     def ask(message: str) -> None:
-#         answer = send_message(message)
-#         print(f"--> {answer}")
+    def ask(message: str) -> None:
+        answer = send_message(message)
+        print(f"--> {answer}")
 
-#     ask("hi! I'm bob")
-#     ask("what is my name?")
-#     ask("what's the weather in sf now?")
-#     ask("What is MSFT stock price?")
+    ask("hi! I'm bob")
+    ask("what is my name?")
+    ask("what's the weather in sf now?")
+    ask("What is MSFT stock price?")
