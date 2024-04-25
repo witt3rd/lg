@@ -106,14 +106,15 @@ workflow.add_edge("action", "agent")
 
 thread = {"configurable": {"thread_id": "2"}}
 
+memory = SqliteSaver.from_conn_string(":memory:")
+
+# Finally, we compile it!
+# This compiles it into a LangChain Runnable,
+# meaning you can use it as you would any other runnable
+app = workflow.compile(checkpointer=memory, interrupt_before=["action"])
+
 
 def send_message(message: str) -> str:
-    memory = SqliteSaver.from_conn_string(":memory:")
-
-    # Finally, we compile it!
-    # This compiles it into a LangChain Runnable,
-    # meaning you can use it as you would any other runnable
-    app = workflow.compile(checkpointer=memory, interrupt_before=["action"])
     inputs = [HumanMessage(content=message)]
     while True:
         for event in app.stream(inputs, thread):
