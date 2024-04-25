@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "lg"
+version = "0.1.0"
+description = ""
+authors = ["Donald Thompson <dothompson@linkedin.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+openai = "^1.23.4"
+litellm = "^1.35.24"
+pydotenv = "^0.0.7"
+langchain = "^0.1.16"
+langgraph = "^0.0.38"
+chromadb = "^0.5.0"
+flet = "^0.22.0"
+duckduckgo-search = "^5.3.0"
+langchain-openai = "^0.1.3"
+
+[tool.poetry.group.dev.dependencies]
+ipykernel = "^6.29.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
