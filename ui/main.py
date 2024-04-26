@@ -3,6 +3,8 @@
 import flet as ft
 from pyee import EventEmitter
 
+from lg.bot import Bot
+
 #
 ee = EventEmitter()
 BOT_NAME = "Bionic"
@@ -66,10 +68,18 @@ def main(page: ft.Page) -> None:
     page.title = "Bionic Chat: User"
 
     def bot_thread() -> None:
-        from lg.bot import Bot
+        print("Bot thread started")
+        on_message(
+            Message(
+                user_name=BOT_NAME,
+                text=f"{BOT_NAME} has joined the chat.",
+                message_type="login_message",
+            )
+        )
 
         @ee.on("user_message")
         def on_user_message(message: Message) -> None:
+            print(f"User message: {message.text}")
             bot = Bot(page.session.get("user_name"))
             response = bot.user_says(message.text)
             on_message(
@@ -89,6 +99,7 @@ def main(page: ft.Page) -> None:
         chat.controls.append(m)
         page.update()
         if message.user_name != BOT_NAME:
+            print("Emitting user_message")
             ee.emit("user_message", message)
 
     def join_chat_click(e) -> None:
