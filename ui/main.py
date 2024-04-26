@@ -65,6 +65,21 @@ def main(page: ft.Page) -> None:
     page.horizontal_alignment = "stretch"
     page.title = "Bionic Chat: User"
 
+    def bot_thread() -> None:
+        from lg.bot import Bot
+
+        @ee.on("user_message")
+        def on_user_message(message: Message) -> None:
+            bot = Bot(page.session.get("user_name"))
+            response = bot.user_says(message.text)
+            on_message(
+                Message(
+                    BOT_NAME,
+                    response,
+                    message_type="chat_message",
+                )
+            )
+
     def on_message(message: Message) -> None:
         print(f"Message: {message}")
         if message.message_type == "chat_message":
@@ -91,6 +106,7 @@ def main(page: ft.Page) -> None:
                     message_type="login_message",
                 )
             )
+            page.run_thread(bot_thread)
 
     def send_message_click(e) -> None:
         if new_message.value != "":
@@ -104,22 +120,6 @@ def main(page: ft.Page) -> None:
                     message_type="chat_message",
                 )
             )
-
-    def bot_thread() -> None:
-        from lg.graphs.human_in_the_loop import send_message
-
-        @ee.on("user_message")
-        def on_user_message(message: Message) -> None:
-            response = send_message(message.text)
-            on_message(
-                Message(
-                    BOT_NAME,
-                    response,
-                    message_type="chat_message",
-                )
-            )
-
-    page.run_thread(bot_thread)
 
     # A dialog asking for a user display name
     join_user_name = ft.TextField(
