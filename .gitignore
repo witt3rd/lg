@@ -43,3 +43,5 @@ TEST-*.xml
 /**/poetry.lock
 /**/logs/
 /**/*.log
+.db/
+.hub_cache/

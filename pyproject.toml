@@ -21,6 +21,7 @@ pygraphviz = "^1.12"
 pyee = "^11.1.0"
 langchain-core = "^0.1.46"
 langchainhub = "^0.1.15"
+pyyaml = "^6.0.1"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.4"
