@@ -106,7 +106,7 @@ def main(page: ft.Page) -> None:
             )
 
     def bot_thread() -> None:
-        from lg.human_in_the_loop import send_message
+        from lg.graphs.human_in_the_loop import send_message
 
         @ee.on("user_message")
         def on_user_message(message: Message) -> None:

@@ -7,7 +7,7 @@ from langchain_community.chat_models.litellm import ChatLiteLLM
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langgraph.graph import StateGraph
 
-from lg.joke_graph import SubGraphState, joke_graph
+from lg.graphs.joke_graph import SubGraphState, joke_graph
 
 #
 
