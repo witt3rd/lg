@@ -12,6 +12,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 
 from .runnables.chat_router import chat_router_chain
+from .runnables.new_user import new_user_chain
 from .tool_registry import ToolRegistry
 from .user_profile import load_user_profile, save_user_profile
 
@@ -37,6 +38,7 @@ def new_user_flow(state):
     print(dumps(state, pretty=True))
     new_state = state.copy()
     new_state["user_profile"] = "new"
+    new_state["reply"] = new_user_chain.invoke(state)
     new_state["agent_out"] = AgentFinish(return_values={}, log="")
     return new_state
 
@@ -79,7 +81,7 @@ class Bot:
         graph = StateGraph(BotState)
         graph.add_node("new_user_flow", new_user_flow)
         graph.add_node("existing_user_flow", existing_user_flow)
-        graph.add_edge("new_user_flow", "existing_user_flow")
+        graph.add_edge("new_user_flow", END)
         graph.add_edge("existing_user_flow", END)
         graph.set_conditional_entry_point(
             condition=router,

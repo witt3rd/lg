@@ -21,23 +21,39 @@ class Message:
 
 class ChatMessage(ft.Row):
     def __init__(self, message: Message):
-        super().__init__()
-        self.vertical_alignment = "start"
-        self.controls = [
-            ft.CircleAvatar(
-                content=ft.Text(self.get_initials(message.user_name)),
-                color=ft.colors.WHITE,
-                bgcolor=self.get_avatar_color(message.user_name),
-            ),
-            ft.Column(
-                [
-                    ft.Text(message.user_name, weight="bold"),
-                    ft.Text(message.text, selectable=True),
-                ],
-                tight=True,
-                spacing=5,
-            ),
-        ]
+        super().__init__(
+            alignment=ft.MainAxisAlignment.START,
+            vertical_alignment="start",
+            controls=[
+                ft.Row(
+                    vertical_alignment="start",
+                    controls=[
+                        ft.CircleAvatar(
+                            content=ft.Text(self.get_initials(message.user_name)),
+                            color=ft.colors.WHITE,
+                            bgcolor=self.get_avatar_color(message.user_name),
+                        ),
+                        ft.Column(
+                            [
+                                ft.Text(
+                                    message.user_name,
+                                    weight="bold",
+                                    color=self.get_avatar_color(message.user_name),
+                                ),
+                                ft.Markdown(
+                                    message.text,
+                                    selectable=True,
+                                    width=800,
+                                ),
+                            ],  # type: ignore
+                            tight=True,
+                            spacing=5,
+                        ),
+                    ],
+                ),
+                ft.Text("10:00 AM", color=ft.colors.GREY_600),
+            ],
+        )
 
     def get_initials(self, user_name: str) -> str:
         if user_name:
@@ -80,7 +96,7 @@ def main(page: ft.Page) -> None:
         @ee.on("user_message")
         def on_user_message(message: Message) -> None:
             print(f"User message: {message.text}")
-            bot = Bot(page.session.get("user_name"))
+            bot = Bot(message.user_name)
             response = bot.user_says(message.text)
             on_message(
                 Message(
@@ -89,6 +105,14 @@ def main(page: ft.Page) -> None:
                     message_type="chat_message",
                 )
             )
+
+        on_user_message(
+            Message(
+                user_name=page.session.get("user_name"),
+                text="Hello",
+                message_type="chat_message",
+            )
+        )
 
     def on_message(message: Message) -> None:
         print(f"Message: {message}")
