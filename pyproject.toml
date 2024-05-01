@@ -27,6 +27,7 @@ arxiv = "^2.1.0"
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.4"
 ruff = "^0.4.1"
+pre-commit = "^3.7.0"
 
 [build-system]
 requires = ["poetry-core"]
